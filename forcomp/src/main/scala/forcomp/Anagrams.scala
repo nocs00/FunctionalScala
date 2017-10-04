@@ -89,32 +89,24 @@ object Anagrams {
     * Note that the order of the occurrence list subsets does not matter -- the subsets
     * in the example above could have been displayed in some other order.
     */
-  def combinations(occurrences: Occurrences): List[Occurrences] = {
-    val initList = occurrences
-      .foldLeft(List[Occurrences]())((s, i) => {
-        val (ch, cnt) = i
-        val lists = for {
-          index <- 1 to cnt
-        } yield {
+  def combinations(occurrences: Occurrences): List[Occurrences] = occurrences match {
+    case Nil => List(List())
+    case _ => occurrences.foldRight(List[Occurrences]())((i, s) => {
+      val (ch, cnt) = i
+      val charCombos = (for {index <- 1 to cnt}
+        yield {
           List(i.copy(_2 = index))
-        }
-        List.concat(s, lists)
-      })
-
-    def go(occurrences: Occurrences, tail: List[Occurrences]): List[Occurrences] = {
-      tail match {
-        case Nil => List(Nil)
-        case _ =>
-          val list = tail
-            .filter(ocr => ocr.head._1 != occurrences.head._1)
-            .map(ocr => List.concat(occurrences, ocr))
-          list ::: go(tail.head, tail.tail)
+        }).toList
+      s match {
+        case Nil => List() :: charCombos
+        case totalList =>
+          s ::: charCombos ::: charCombos
+            .foldLeft(List[Occurrences]())((ss, ii) => {
+              val combo = ii.head
+              ss ::: s.map(oc => combo :: oc)
+            })
       }
-    }
-    initList match {
-      case Nil => List(List())
-      case _ => go(initList.head, initList.tail)
-    }
+    })
   }
 
   /** Subtracts occurrence list `y` from occurrence list `x`.
@@ -127,7 +119,11 @@ object Anagrams {
     * Note: the resulting value is an occurrence - meaning it is sorted
     * and has no zero-entries.
     */
-  def subtract(x: Occurrences, y: Occurrences): Occurrences = ???
+  def subtract(x: Occurrences, y: Occurrences): Occurrences = x.map(occurence => {
+    val (chr, num) = occurence
+    val yOccurence = y.find(o => o._1 == chr)
+    (chr, num - yOccurence.getOrElse((chr, 0))._2)
+  }).filter(_._2 != 0)
 
   /** Returns a list of all anagram sentences of the given sentence.
     *
