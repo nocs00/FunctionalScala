@@ -165,5 +165,46 @@ object Anagrams {
     *
     * Note: There is only one anagram of an empty sentence.
     */
-  def sentenceAnagrams(sentence: Sentence): List[Sentence] = ???
+  def sentenceAnagrams(sentence: Sentence): List[Sentence] = sentence match {
+    case Nil => List(List())
+    case _ => {
+      val allOccurences = sentenceOccurrences(sentence)
+      val allCombos = combinations(allOccurences)
+      val validWords = dictionary.filter(wordFitOccurences(_, allOccurences))
+      val initialSentences = validWords.map(List(_))
+
+      def buildSentences(word: Word): List[Sentence] = {
+        def go(word: Word, occurrences: Occurrences, acc: List[Sentence]): List[Sentence] = {
+          val restOccurences = subtract(occurrences, wordOccurrences(word))
+          val newAcc = acc.map(word :: _)
+          restOccurences match {
+            case Nil => newAcc
+            case _ =>
+              val wordsFit = validWords.filter(wordFitOccurences(_, restOccurences))
+              wordsFit match {
+                case Nil => newAcc
+                case _ => wordsFit.flatMap(w => go(w, restOccurences, newAcc))
+              }
+          }
+        }
+
+        go(word, sentenceOccurrences(sentence), List(List()))
+          .filter(s => subtract(allOccurences, sentenceOccurrences(s)).isEmpty)
+          .map(_.reverse)
+      }
+      val zzz = validWords.flatMap(w => buildSentences(w))
+      zzz
+    }
+  }
+
+  private def wordFitOccurences(word: Word, occurrences: Occurrences): Boolean =
+    combinations(occurrences).contains(wordOccurrences(word))
+
+
+  private def removeElem[T](list: List[T], elem: T): List[T] = if (list.contains(elem)) {
+    removeIndex(list, list.indexOf(elem))
+  } else list
+
+  private def removeIndex[T](list: List[T], index: Int): List[T] = list.patch(index, Nil, 1)
+
 }
